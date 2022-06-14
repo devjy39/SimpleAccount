@@ -1,6 +1,5 @@
 package com.example.account.config;
 
-import com.example.account.domain.AccountUser;
 import com.example.account.service.AccountUserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -9,7 +8,7 @@ import javax.annotation.PostConstruct;
 
 @Component
 @RequiredArgsConstructor
-public class DataMigration {
+public class AccountUserDataMigration {
     private final AccountUserService accountUserService;
 
     @PostConstruct
