@@ -8,7 +8,7 @@ RestAPI 기반의 Simple Account 만들기
 - embedded redis
 - h2 DB
 
-#### H2 디비를 이용해 미리 입력된 사용자 데이터를 바탕으로 기능 개발.<br/>
+#### H2 디비를 이용해 미리 입력된 사용자 데이터를 바탕으로 동작하는 기능 개발.<br/>
 - Account - 계좌 생성, 계좌 삭제, 계좌 조회<br/>
 - Transaction - 잔액 사용, 거래 취소, 거래 조회<br/>
 
