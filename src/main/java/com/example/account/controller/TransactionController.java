@@ -17,48 +17,23 @@ public class TransactionController {
 
     @PostMapping("/transaction/use")
     public TransactionUse.Response useAccountBalance(@RequestBody @Valid TransactionUse.Request request) {
-        TransactionInfo transactionInfo = transactionInfoService.transactUse(
+        return TransactionUse.Response.from(transactionInfoService.transactUse(
                 request.getAccountNumber(),
                 request.getUserId(),
-                request.getTransactionAmount());
-
-        return TransactionUse.Response.builder()
-                .accountNumber(transactionInfo.getAccount().getAccountNumber())
-                .transactionResult(transactionInfo.getTransactionResult())
-                .transactionId(transactionInfo.getId())
-                .TransactionAmount(transactionInfo.getAmount())
-                .transactedAt(transactionInfo.getTransactedAt())
-                .build();
+                request.getTransactionAmount()));
     }
 
     @PostMapping("/transaction/cancel")
     public TransactionCancel.Response cancelUseAccount(@RequestBody @Valid TransactionCancel.Request request) {
-        TransactionInfo transactionInfo = transactionInfoService.transactCancel(
+        return TransactionCancel.Response.from(transactionInfoService.transactCancel(
                 request.getAccountNumber(),
                 request.getTransactionId(),
-                request.getCancelAmount());
-
-        return TransactionCancel.Response.builder()
-                .accountNumber(transactionInfo.getAccount().getAccountNumber())
-                .transactionResult(transactionInfo.getTransactionResult())
-                .transactionId(transactionInfo.getId())
-                .TransactionAmount(transactionInfo.getAmount())
-                .transactedAt(transactionInfo.getTransactedAt())
-                .build();
+                request.getCancelAmount()));
     }
 
     @GetMapping("/transaction/{transactionId}")
     public TransactionResponse inquireTransaction(@PathVariable Long transactionId) {
-        TransactionInfo transactionInfo = transactionInfoService.inquireTransaction(
-                transactionId);
-
-        return TransactionResponse.builder()
-                .accountNumber(transactionInfo.getAccount().getAccountNumber())
-                .transactionType(transactionInfo.getTransactionType())
-                .transactionResult(transactionInfo.getTransactionResult())
-                .transactionId(transactionInfo.getId())
-                .transactionAmount(transactionInfo.getAmount())
-                .transactedAt(transactionInfo.getTransactedAt())
-                .build();
+        return TransactionResponse.from(transactionInfoService.inquireTransaction(
+                transactionId));
     }
 }

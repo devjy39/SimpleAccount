@@ -1,5 +1,6 @@
 package com.example.account.dto;
 
+import com.example.account.domain.TransactionInfo;
 import com.example.account.type.TransactionResult;
 import com.example.account.type.TransactionType;
 import lombok.*;
@@ -20,4 +21,15 @@ public class TransactionResponse {
     private Long transactionAmount;
 
     private LocalDateTime transactedAt;
+
+    public static TransactionResponse from(TransactionInfo transactionInfo) {
+        return TransactionResponse.builder()
+                .accountNumber(transactionInfo.getAccount().getAccountNumber())
+                .transactionType(transactionInfo.getTransactionType())
+                .transactionResult(transactionInfo.getTransactionResult())
+                .transactionId(transactionInfo.getId())
+                .transactionAmount(transactionInfo.getAmount())
+                .transactedAt(transactionInfo.getTransactedAt())
+                .build();
+    }
 }

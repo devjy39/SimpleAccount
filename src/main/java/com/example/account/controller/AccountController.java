@@ -20,27 +20,16 @@ public class AccountController {
 
     @PostMapping("/account")
     public CreateAccount.Response createAccount(@RequestBody @Valid CreateAccount.Request request) {
-        Account account = accountService.createAccount(
+        return CreateAccount.Response.from(accountService.createAccount(
                 request.getUserId(),
-                request.getInitialBalance());
-
-        return new CreateAccount.Response(
-                account.getId(),
-                account.getAccountNumber(),
-                account.getRegisteredAt());
+                request.getInitialBalance()));
     }
 
     @DeleteMapping("/account")
     public DeleteAccount.Response deleteAccount(@RequestBody @Valid DeleteAccount.Request request) {
-        Account account = accountService.deleteAccount(
+        return DeleteAccount.Response.from(accountService.deleteAccount(
                 request.getUserId(),
-                request.getAccountNumber());
-
-        return DeleteAccount.Response.builder()
-                .accountId(account.getId())
-                .accountNumber(account.getAccountNumber())
-                .unRegisteredAt(account.getUnregisteredAt())
-                .build();
+                request.getAccountNumber()));
     }
 
     @GetMapping("/account")
@@ -48,9 +37,9 @@ public class AccountController {
         List<Account> accountList = accountService.inquireAccounts(userId);
 
         return accountList.stream().map(account -> AccountResponse.builder()
-                .accountNumber(account.getAccountNumber())
-                .balance(account.getBalance())
-                .build())
+                        .accountNumber(account.getAccountNumber())
+                        .balance(account.getBalance())
+                        .build())
                 .collect(Collectors.toList());
     }
 }
