@@ -26,14 +26,15 @@ public class DeleteAccount {
     @AllArgsConstructor
     @NoArgsConstructor
     public static class Response {
-        private Long accountId;
+        private Long userId;
         private String accountNumber;
         private LocalDateTime unRegisteredAt;
 
-        public static Response from(Account account) {
-            return Response.builder().accountId(account.getId())
-                    .accountNumber(account.getAccountNumber())
-                    .unRegisteredAt(account.getUnregisteredAt())
+        public static Response from(AccountDto accountDto) {
+            return Response.builder()
+                    .userId(accountDto.getUserId())
+                    .accountNumber(accountDto.getAccountNumber())
+                    .unRegisteredAt(accountDto.getUnRegisteredAt())
                     .build();
         }
     }

@@ -7,7 +7,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.time.LocalDateTime;
@@ -71,7 +70,7 @@ class AccountRepositoryTest {
                 .registeredAt(LocalDateTime.now()).build();
         accountRepository.save(account);
         //when
-        List<Account> accountList = accountRepository.findByAccountUserId(savedUser.getId());
+        List<Account> accountList = accountRepository.findByAccountUser(savedUser);
         //then
         assertEquals(accountList.size(), 1);
         assertEquals(accountList.get(0).getAccountUser().getId(), savedUser.getId());
@@ -90,7 +89,7 @@ class AccountRepositoryTest {
                 .registeredAt(LocalDateTime.now()).build();
         accountRepository.save(account);
         //when
-        int count = accountRepository.countByAccountUserId(savedUser.getId());
+        int count = accountRepository.countByAccountUser(savedUser);
 
         //then
         assertEquals(count, 1);

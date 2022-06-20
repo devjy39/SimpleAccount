@@ -3,6 +3,7 @@ package com.example.account.service;
 import com.example.account.domain.Account;
 import com.example.account.domain.AccountUser;
 import com.example.account.domain.TransactionInfo;
+import com.example.account.dto.TransactionDto;
 import com.example.account.exception.AccountException;
 import com.example.account.repository.AccountRepository;
 import com.example.account.repository.AccountUserRepository;
@@ -13,7 +14,12 @@ import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
 import java.time.LocalDateTime;
-import java.util.Optional;
+import java.util.UUID;
+
+import static com.example.account.type.TransactionResult.TRANSACTION_FAIL;
+import static com.example.account.type.TransactionResult.TRANSACTION_SUCCESS;
+import static com.example.account.type.TransactionType.CANCEL;
+import static com.example.account.type.TransactionType.USE;
 
 @Service
 @RequiredArgsConstructor
@@ -30,77 +36,29 @@ public class TransactionInfoService {
      * 거래금액이 너무 크거나 작은 경우
      */
     @Transactional(dontRollbackOn = AccountException.class)
-    public TransactionInfo transactUse(String accountNumber, Long userId, Long transactionAmount) {
-        Optional<AccountUser> accountUser = accountUserRepository.findById(userId);
-        if (accountUser.isEmpty()) {
-            return saveUseTransaction(null, transactionAmount,
-                    ErrorCode.USER_NOT_FOUND);
-        }
+    public TransactionDto transactUse(String accountNumber, Long userId, Long amount) {
+        AccountUser accountUser = accountUserRepository.findById(userId)
+                .orElseThrow(() -> new AccountException(ErrorCode.USER_NOT_FOUND));
 
-        Optional<Account> OptAccount = accountRepository.findByAccountNumber(accountNumber);
-        if (OptAccount.isEmpty()) {
-            return saveUseTransaction(null, transactionAmount,
-                    ErrorCode.ACCOUNT_NOT_FOUND);
-        }
-        Account account = OptAccount.get();
+        Account account = accountRepository.findByAccountNumber(accountNumber)
+                .orElseThrow(() -> new AccountException(ErrorCode.ACCOUNT_NOT_FOUND));
 
-        if (!userId.equals(account.getAccountUser().getId())) {
-            return saveUseTransaction(account,transactionAmount,
-                    ErrorCode.ACCOUNT_USER_MISMATCH);
-        }
+        validateTransactUse(accountUser, account);
 
-        if (AccountStatus.UNREGISTERED.equals(account.getAccountStatus())) {
-            return saveUseTransaction(account,transactionAmount,
-                    ErrorCode.UNREGISTERED_ACCOUNT);
-        }
+        account.useBalance(amount); //엔티티 수정 로직을 엔티티 메서드로
 
-        if (account.getBalance() < transactionAmount) {
-            return saveUseTransaction(account,transactionAmount,
-                    ErrorCode.INSUFFICIENT_BALANCE);
-        } else if (transactionAmount < AccountSetting.MIN_TRANSACTION_AMOUNT.getNumber()) {
-            return saveUseTransaction(account,transactionAmount,
-                    ErrorCode.TOO_SMALL_AMOUNT);
-        } else if (transactionAmount > AccountSetting.MAX_TRANSACTION_AMOUNT.getNumber()) {
-            return saveUseTransaction(account,transactionAmount,
-                    ErrorCode.TOO_BIG_AMOUNT);
-        }
-
-        //동시성
-
-        return saveUseTransaction(account, transactionAmount, null);
+        return TransactionDto.fromEntity(
+                saveTransaction(account, amount, USE, TRANSACTION_SUCCESS));
     }
 
-    private TransactionInfo saveUseTransaction(Account account, Long transactionAmount,
-                                               ErrorCode errorCode) {
-        boolean isFail = (errorCode != null);
-
-        TransactionInfo transactionInfo = TransactionInfo.builder()
-                .account(account)
-                .transactionType(TransactionType.USE)
-                .transactionResult(isFail ? TransactionResult.TRANSACTION_FAIL :
-                        TransactionResult.TRANSACTION_SUCCESS)
-                .amount(transactionAmount)
-                .balanceSnapshot(account == null ? 0 : account.getBalance())
-                .transactedAt(LocalDateTime.now())
-                .build();
-
-        transactionInfoRepository.save(transactionInfo);
-
-        if (isFail) {
-            throw new AccountException(errorCode);
+    private void validateTransactUse(AccountUser accountUser, Account account) {
+        if (accountUser != account.getAccountUser()) {
+            throw new AccountException(ErrorCode.ACCOUNT_USER_MISMATCH);
         }
 
-        updateBalance(account, -transactionAmount);
-
-        return transactionInfo;
-    }
-
-    private void updateBalance(Account account, Long transactionAmount) {
-        if (account == null) {
-            return;
+        if (account.getAccountStatus() == AccountStatus.UNREGISTERED) {
+            throw new AccountException(ErrorCode.UNREGISTERED_ACCOUNT);
         }
-        account.setBalance(account.getBalance() + transactionAmount);
-        accountRepository.save(account);
     }
 
     /**
@@ -111,81 +69,66 @@ public class TransactionInfoService {
      * 1년이 넘은 거래 건인 경우
      */
     @Transactional(dontRollbackOn = AccountException.class)
-    public TransactionInfo transactCancel(String accountNumber, Long transactionId, Long cancelAmount) {
-        Optional<TransactionInfo> optTransactionInfo = transactionInfoRepository.findById(transactionId);
-        if (optTransactionInfo.isEmpty()) {
-            return saveCancelTransaction(cancelAmount, null,
-                    ErrorCode.TRANSACTION_NOT_FOUND);
-        }
-        TransactionInfo transactionInfo = optTransactionInfo.get();
+    public TransactionDto transactCancel(String accountNumber, String transactionId, Long cancelAmount) {
+        TransactionInfo transactionInfo = transactionInfoRepository.findByTransactionId(transactionId)
+                .orElseThrow(() -> new AccountException(ErrorCode.TRANSACTION_NOT_FOUND));
 
-        if (transactionInfo.getTransactionType() != TransactionType.USE ||
-            transactionInfo.getTransactionResult() != TransactionResult.TRANSACTION_SUCCESS) {
-            return saveCancelTransaction(cancelAmount, transactionInfo,
-                    ErrorCode.UNABLE_CANCEL_TRANSACTION);
-        }
+        Account account = accountRepository.findByAccountNumber(accountNumber)
+                .orElseThrow(() -> new AccountException(ErrorCode.ACCOUNT_NOT_FOUND));
 
+        validateCancelUseBalance(cancelAmount, transactionInfo, account);
+
+        account.cancelUseBalance(cancelAmount);
+        transactionInfo.transactionResultToCancel();
+
+        return TransactionDto.fromEntity(saveTransaction(
+                account, cancelAmount, CANCEL, TRANSACTION_SUCCESS));
+    }
+
+    private void validateCancelUseBalance(Long cancelAmount, TransactionInfo transactionInfo, Account account) {
         if (!cancelAmount.equals(transactionInfo.getAmount())) {
-            return saveCancelTransaction(cancelAmount,
-                    transactionInfo, ErrorCode.TRANSACTION_AMOUNT_MISMATCH);
+            throw new AccountException(ErrorCode.TRANSACTION_AMOUNT_MISMATCH);
         }
 
-        if (!accountNumber.equals(transactionInfo.getAccount().getAccountNumber())) {
-            return saveCancelTransaction(cancelAmount,
-                    transactionInfo, ErrorCode.ACCOUNT_NUMBER_MISMATCH);
+        if (!account.getAccountNumber().equals(transactionInfo.getAccount().getAccountNumber())) {
+            throw new AccountException(ErrorCode.ACCOUNT_NUMBER_MISMATCH);
         }
 
         if (transactionInfo.getTransactedAt().isBefore(LocalDateTime.now().minusYears(1))) {
-            return saveCancelTransaction(cancelAmount,
-                    transactionInfo, ErrorCode.EXCEED_DATE_1YEAR);
+            throw new AccountException(ErrorCode.EXCEED_DATE_1YEAR);
         }
-
-        return saveCancelTransaction(cancelAmount, transactionInfo, null);
-    }
-
-    private TransactionInfo saveCancelTransaction(Long cancelAmount,
-                                                  TransactionInfo transactionInfo,
-                                                  ErrorCode errorCode) {
-        boolean isFail = (errorCode != null);
-
-        TransactionInfo newTransaction = TransactionInfo.builder()
-                .account(transactionInfo == null ? null : transactionInfo.getAccount())
-                .transactionType(TransactionType.CANCEL)
-                .transactionResult(isFail ? TransactionResult.TRANSACTION_FAIL :
-                        TransactionResult.TRANSACTION_SUCCESS)
-                .amount(cancelAmount)
-                .balanceSnapshot(transactionInfo == null ? 0L : transactionInfo.getAccount().getBalance())
-                .transactedAt(LocalDateTime.now())
-                .build();
-
-        transactionInfoRepository.save(newTransaction);
-
-        if (isFail) {
-            throw new AccountException(errorCode);
-        }
-
-        //사용 취소
-        updateTransactionResult(transactionInfo);
-        updateBalance(newTransaction.getAccount(), cancelAmount);
-
-        return transactionInfo;
-    }
-
-    private void updateTransactionResult(TransactionInfo transactionInfo) {
-        if (transactionInfo == null) {
-            return;
-        }
-        transactionInfo.setTransactionResult(TransactionResult.TRANSACTION_CANCEL);
-        transactionInfoRepository.save(transactionInfo);
     }
 
     /**
-     *  해당 거래 아이디가 없는 경우
-     *  실패한 거래도 확인 가능해야 함
+     * 해당 거래 아이디가 없는 경우
+     * 실패한 거래도 확인 가능해야 함
      */
     @Transactional
-    public TransactionInfo inquireTransaction(Long transactionId) {
-        return transactionInfoRepository.findById(transactionId)
-                .orElseThrow(() -> new AccountException(ErrorCode.TRANSACTION_NOT_FOUND));
+    public TransactionDto inquireTransaction(String transactionId) {
+        return TransactionDto.fromEntity(transactionInfoRepository.findByTransactionId(transactionId)
+                .orElseThrow(() -> new AccountException(ErrorCode.TRANSACTION_NOT_FOUND)));
+    }
+
+    @Transactional
+    public void saveFailedTransaction(String accountNumber, Long amount, TransactionType type) {
+        Account account = accountRepository.findByAccountNumber(accountNumber)
+                .orElseThrow(() -> new AccountException(ErrorCode.ACCOUNT_NOT_FOUND));
+
+        saveTransaction(account, amount, type, TRANSACTION_FAIL);
+    }
+
+    private TransactionInfo saveTransaction(Account account, Long amount,
+                                            TransactionType type, TransactionResult result) {
+        TransactionInfo transactionInfo = TransactionInfo.builder()
+                .account(account)
+                .transactionType(type)
+                .transactionResult(result)
+                .amount(amount)
+                .balanceSnapshot(account.getBalance())
+                .transactionId(UUID.randomUUID().toString().replace("-", ""))
+                .transactedAt(LocalDateTime.now())
+                .build();
+        transactionInfoRepository.save(transactionInfo);
+        return transactionInfo;
     }
 }

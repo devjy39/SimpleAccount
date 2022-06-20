@@ -1,6 +1,5 @@
 package com.example.account.dto;
 
-import com.example.account.domain.TransactionInfo;
 import com.example.account.type.TransactionResult;
 import lombok.*;
 
@@ -22,7 +21,7 @@ public class TransactionUse {
         private String accountNumber;
         @NotNull
         @Min(1)
-        private Long TransactionAmount;
+        private Long Amount;
     }
 
     @Setter
@@ -33,17 +32,17 @@ public class TransactionUse {
     public static class Response {
         private String accountNumber;
         private TransactionResult transactionResult;
-        private Long transactionId;
-        private Long TransactionAmount;
+        private String transactionId;
+        private Long amount;
         private LocalDateTime transactedAt;
 
-        public static Response from(TransactionInfo transactionInfo) {
+        public static Response from(TransactionDto transactionDto) {
             return TransactionUse.Response.builder()
-                    .accountNumber(transactionInfo.getAccount().getAccountNumber())
-                    .transactionResult(transactionInfo.getTransactionResult())
-                    .transactionId(transactionInfo.getId())
-                    .TransactionAmount(transactionInfo.getAmount())
-                    .transactedAt(transactionInfo.getTransactedAt())
+                    .accountNumber(transactionDto.getAccountNumber())
+                    .transactionResult(transactionDto.getTransactionResult())
+                    .transactionId(transactionDto.getTransactionId())
+                    .amount(transactionDto.getAmount())
+                    .transactedAt(transactionDto.getTransactedAt())
                     .build();
         }
     }

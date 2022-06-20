@@ -7,28 +7,30 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
-@Setter
 @Getter
+@Setter
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class TransactionResponse {
+public class TransactionDto {
+    private String transactionId;
     private String accountNumber;
+    private Long amount;
 
     private TransactionType transactionType;
     private TransactionResult transactionResult;
-    private Long transactionId;
-    private Long transactionAmount;
+    private Long balanceSnapshot;
 
     private LocalDateTime transactedAt;
 
-    public static TransactionResponse from(TransactionInfo transactionInfo) {
-        return TransactionResponse.builder()
+    public static TransactionDto fromEntity(TransactionInfo transactionInfo) {
+        return TransactionDto.builder()
+                .transactionId(transactionInfo.getTransactionId())
                 .accountNumber(transactionInfo.getAccount().getAccountNumber())
+                .amount(transactionInfo.getAmount())
                 .transactionType(transactionInfo.getTransactionType())
                 .transactionResult(transactionInfo.getTransactionResult())
-                .transactionId(transactionInfo.getId())
-                .transactionAmount(transactionInfo.getAmount())
+                .balanceSnapshot(transactionInfo.getBalanceSnapshot())
                 .transactedAt(transactionInfo.getTransactedAt())
                 .build();
     }

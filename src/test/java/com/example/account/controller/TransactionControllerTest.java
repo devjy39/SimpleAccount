@@ -1,8 +1,7 @@
 package com.example.account.controller;
 
-import com.example.account.domain.Account;
-import com.example.account.domain.TransactionInfo;
 import com.example.account.dto.TransactionCancel;
+import com.example.account.dto.TransactionDto;
 import com.example.account.dto.TransactionUse;
 import com.example.account.service.TransactionInfoService;
 import com.example.account.type.TransactionResult;
@@ -18,8 +17,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -44,14 +42,15 @@ class TransactionControllerTest {
         //given
         TransactionUse.Request input = new TransactionUse.Request();
         input.setAccountNumber("1111111111");
-        input.setTransactionAmount(10000L);
+        input.setAmount(10000L);
         input.setUserId(1L);
         LocalDateTime now = LocalDateTime.now().withNano(0);
 
-        given(transactionInfoService.transactUse(any(), anyLong(), anyLong()))
-                .willReturn(TransactionInfo.builder().id(1001L)
+        given(transactionInfoService.transactUse(anyString(), anyLong(), anyLong()))
+                .willReturn(TransactionDto.builder()
+                        .transactionId("1q2w3e4r5t")
                         .transactionResult(TransactionResult.TRANSACTION_SUCCESS)
-                        .account(Account.builder().accountNumber("1111111111").build())
+                        .accountNumber("1111111111")
                         .amount(1000L)
                         .transactedAt(now).build());
         //when
@@ -62,10 +61,10 @@ class TransactionControllerTest {
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.transactionId").value(1001L))
+                .andExpect(jsonPath("$.transactionId").value("1q2w3e4r5t"))
                 .andExpect(jsonPath("$.accountNumber").value("1111111111"))
                 .andExpect(jsonPath("$.transactionResult").value("TRANSACTION_SUCCESS"))
-                .andExpect(jsonPath("$.transactionAmount").value(1000L))
+                .andExpect(jsonPath("$.amount").value(1000L))
                 .andExpect(jsonPath("$.transactedAt").value(now.toString()));
     }
 
@@ -75,14 +74,15 @@ class TransactionControllerTest {
         //given
         TransactionCancel.Request input = new TransactionCancel.Request();
         input.setAccountNumber("1111111111");
-        input.setTransactionId(1001L);
-        input.setCancelAmount(1500L);
+        input.setTransactionId("1q2w3e4r5t");
+        input.setAmount(1500L);
         LocalDateTime now = LocalDateTime.now().withNano(0);
 
-        given(transactionInfoService.transactCancel(any(), anyLong(), anyLong()))
-                .willReturn(TransactionInfo.builder().id(1001L)
+        given(transactionInfoService.transactCancel(anyString(), anyString(), anyLong()))
+                .willReturn(TransactionDto.builder()
+                        .accountNumber("1111111111")
                         .transactionResult(TransactionResult.TRANSACTION_CANCEL)
-                        .account(Account.builder().accountNumber("1111111111").build())
+                        .transactionId("1q2w3e4r5t")
                         .amount(1500L)
                         .transactedAt(now).build());
         //when
@@ -93,10 +93,10 @@ class TransactionControllerTest {
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.transactionId").value(1001L))
+                .andExpect(jsonPath("$.transactionId").value("1q2w3e4r5t"))
                 .andExpect(jsonPath("$.accountNumber").value("1111111111"))
                 .andExpect(jsonPath("$.transactionResult").value("TRANSACTION_CANCEL"))
-                .andExpect(jsonPath("$.transactionAmount").value(1500L))
+                .andExpect(jsonPath("$.amount").value(1500L))
                 .andExpect(jsonPath("$.transactedAt").value(now.toString()));
     }
 
@@ -106,11 +106,12 @@ class TransactionControllerTest {
         //given
         LocalDateTime now = LocalDateTime.now().withNano(0);
 
-        given(transactionInfoService.inquireTransaction(anyLong()))
-                .willReturn(TransactionInfo.builder().id(1001L)
-                        .transactionResult(TransactionResult.TRANSACTION_FAIL)
-                        .account(Account.builder().accountNumber("1111111111").build())
+        given(transactionInfoService.inquireTransaction(anyString()))
+                .willReturn(TransactionDto.builder()
+                        .accountNumber("1111111111")
                         .transactionType(TransactionType.USE)
+                        .transactionResult(TransactionResult.TRANSACTION_FAIL)
+                        .transactionId("1q2w3e4r5t")
                         .amount(1500L)
                         .transactedAt(now).build());
         //when
@@ -118,11 +119,11 @@ class TransactionControllerTest {
         mockMvc.perform(get("/transaction/1001"))
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.transactionId").value(1001L))
+                .andExpect(jsonPath("$.transactionId").value("1q2w3e4r5t"))
                 .andExpect(jsonPath("$.accountNumber").value("1111111111"))
                 .andExpect(jsonPath("$.transactionResult").value("TRANSACTION_FAIL"))
                 .andExpect(jsonPath("$.transactionType").value("USE"))
-                .andExpect(jsonPath("$.transactionAmount").value(1500L))
+                .andExpect(jsonPath("$.amount").value(1500L))
                 .andExpect(jsonPath("$.transactedAt").value(now.toString()));
     }
 

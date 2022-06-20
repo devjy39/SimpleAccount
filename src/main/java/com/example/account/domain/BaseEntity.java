@@ -9,14 +9,12 @@ import javax.persistence.*;
 import java.time.LocalDateTime;
 
 @Getter
-@Builder
-@AllArgsConstructor
-@NoArgsConstructor
-@Entity
-public class AccountUser extends BaseEntity { // User로 하게되면 디비 시스템 기본 테이블(User) 충돌
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    private String name;
+@MappedSuperclass
+@EntityListeners(AuditingEntityListener.class)
+public abstract class BaseEntity {
+    // 모든 테이블이 갖으면 좋은 메타정보 jpa 에서 자동저장
+    @CreatedDate
+    private LocalDateTime createdAt;
+    @LastModifiedDate
+    private LocalDateTime updatedAt;
 }

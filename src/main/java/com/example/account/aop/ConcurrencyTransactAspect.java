@@ -4,7 +4,9 @@ import com.example.account.exception.AccountException;
 import com.example.account.type.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.annotation.AfterThrowing;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
@@ -36,6 +38,15 @@ public class ConcurrencyTransactAspect {
         return proceed;
     }
 
+    @AfterThrowing(value = "(transactUseAspect() || transactCancelAspect()) && args(accountNumber,..)", throwing = "exception")
+    public void throwUnlockTransaction(JoinPoint joinPoint, Exception exception, String accountNumber) {
+        log.info(exception.toString()+" error, unLock:"+accountNumber);
+
+        accountUnlock(accountNumber);
+    }
+
+
+
     public void accountLock(String accountNumber) {
         RLock lock = redissonClient.getLock(accountNumber);
 
@@ -52,7 +63,7 @@ public class ConcurrencyTransactAspect {
         if (lock.isLocked()) {
             lock.unlock();
         }
-        log.info("unlock success!!!!!");
+        log.info("unlock success!");
     }
 
 }

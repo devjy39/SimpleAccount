@@ -1,10 +1,10 @@
 package com.example.account.domain;
 
+import com.example.account.exception.AccountException;
+import com.example.account.type.AccountSetting;
 import com.example.account.type.AccountStatus;
+import com.example.account.type.ErrorCode;
 import lombok.*;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
@@ -15,8 +15,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor //builder에 필요
 @Builder
 @Entity
-@EntityListeners(AuditingEntityListener.class)
-public class Account {
+public class Account extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -31,10 +30,22 @@ public class Account {
     private Long balance;
 
     private LocalDateTime registeredAt;
-    private LocalDateTime unregisteredAt;
+    private LocalDateTime unRegisteredAt;
 
-    @CreatedDate
-    private LocalDateTime createdAt;
-    @LastModifiedDate
-    private LocalDateTime updatedAt;
+    public void useBalance(Long amount) {
+        if (amount > balance) {
+            throw new AccountException(ErrorCode.INSUFFICIENT_BALANCE);
+        }
+        if (amount < AccountSetting.MIN_TRANSACTION_AMOUNT.getNumber()) {
+            throw new AccountException(ErrorCode.TOO_SMALL_AMOUNT);
+        } else if (amount > AccountSetting.MAX_TRANSACTION_AMOUNT.getNumber()) {
+            throw new AccountException(ErrorCode.TOO_BIG_AMOUNT);
+        }
+
+        balance -= amount;
+    }
+
+    public void cancelUseBalance(Long amount) {
+        balance += amount;
+    }
 }

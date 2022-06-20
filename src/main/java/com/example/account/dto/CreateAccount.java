@@ -1,6 +1,5 @@
 package com.example.account.dto;
 
-import com.example.account.domain.Account;
 import lombok.*;
 
 import javax.validation.constraints.Min;
@@ -12,6 +11,8 @@ public class CreateAccount {
     @Getter
     @Setter
     @ToString
+    @AllArgsConstructor
+    @NoArgsConstructor
     public static class Request {
         @NotNull
         @Min(1)
@@ -28,15 +29,15 @@ public class CreateAccount {
     @AllArgsConstructor
     @NoArgsConstructor
     public static class Response {
-        private Long accountId;
+        private Long userId;
         private String accountNumber;
         private LocalDateTime registeredAt;
 
-        public static Response from(Account account) {
+        public static Response from(AccountDto accountDto) {
             return Response.builder()
-                    .accountId(account.getId())
-                    .accountNumber(account.getAccountNumber())
-                    .registeredAt(account.getRegisteredAt())
+                    .userId(accountDto.getUserId())
+                    .accountNumber(accountDto.getAccountNumber())
+                    .registeredAt(accountDto.getRegisteredAt())
                     .build();
         }
     }
