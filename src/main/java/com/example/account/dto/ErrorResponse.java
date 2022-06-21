@@ -4,7 +4,7 @@ import com.example.account.type.ErrorCode;
 import lombok.*;
 
 @AllArgsConstructor
-@Getter // 없으면 response error
+@Getter
 public class ErrorResponse {
     private ErrorCode errorCode;
     private String errorMessage;

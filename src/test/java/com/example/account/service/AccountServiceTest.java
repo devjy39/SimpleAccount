@@ -3,7 +3,6 @@ package com.example.account.service;
 import com.example.account.domain.Account;
 import com.example.account.domain.AccountUser;
 import com.example.account.dto.AccountDto;
-import com.example.account.dto.AccountInfo;
 import com.example.account.exception.AccountException;
 import com.example.account.repository.AccountRepository;
 import com.example.account.repository.AccountUserRepository;
@@ -18,7 +17,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -184,7 +182,7 @@ class AccountServiceTest {
         AccountException exception = assertThrows(AccountException.class, () ->
                 accountService.deleteAccount(1234L, "1111111111"));
         //then
-        assertEquals(ErrorCode.ACCOUNT_USER_MISMATCH, exception.getErrorCode());
+        assertEquals(ErrorCode.ACCOUNT_USER_UN_MATCH, exception.getErrorCode());
     }
 
     @Test

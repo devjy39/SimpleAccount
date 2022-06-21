@@ -10,11 +10,11 @@ import com.example.account.repository.AccountUserRepository;
 import com.example.account.repository.TransactionInfoRepository;
 import com.example.account.type.AccountStatus;
 import com.example.account.type.ErrorCode;
-import com.example.account.type.TransactionResult;
 import com.example.account.type.TransactionType;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -22,11 +22,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
+import static com.example.account.type.TransactionResult.*;
+import static com.example.account.type.TransactionType.CANCEL;
+import static com.example.account.type.TransactionType.USE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class TransactionInfoServiceTest {
@@ -72,7 +76,7 @@ class TransactionInfoServiceTest {
                 transactionInfoService.transactUse("1111111111",
                         100L, 1000L));
         //then
-        assertEquals(ErrorCode.ACCOUNT_USER_MISMATCH, exception.getErrorCode());
+        assertEquals(ErrorCode.ACCOUNT_USER_UN_MATCH, exception.getErrorCode());
     }
 
     @Test
@@ -149,17 +153,31 @@ class TransactionInfoServiceTest {
         AccountUser user = AccountUser.builder().id(123L).build();
         given(accountUserRepository.findById(anyLong()))
                 .willReturn(Optional.ofNullable(user));
+        Account account = Account.builder()
+                .accountUser(user)
+                .accountStatus(AccountStatus.IN_USE)
+                .balance(20000L)
+                .build();
         given(accountRepository.findByAccountNumber(anyString()))
-                .willReturn(Optional.ofNullable(Account.builder()
-                        .accountUser(user)
-                        .accountStatus(AccountStatus.IN_USE)
-                        .balance(200000000L)
-                        .build()));
+                .willReturn(Optional.ofNullable(account));
+        given(transactionInfoRepository.save(any()))
+                .willReturn(TransactionInfo.builder()
+                        .transactionId("1q2w3e4r5t6y")
+                        .account(account)
+                        .amount(15000L)
+                        .transactionType(USE)
+                        .transactionResult(TRANSACTION_SUCCESS)
+                        .balanceSnapshot(5000L)
+                        .transactedAt(LocalDateTime.now()).build());
+        ArgumentCaptor<TransactionInfo> captor = ArgumentCaptor.forClass(TransactionInfo.class);
         //when
-        TransactionDto transactionDto = transactionInfoService.transactUse("1111111111",
+        transactionInfoService.transactUse("1111111111",
                 123L, 15000L);
         //then
-        assertEquals(TransactionResult.TRANSACTION_SUCCESS, transactionDto.getTransactionResult());
+        verify(transactionInfoRepository, times(1)).save(captor.capture());
+        assertEquals(USE, captor.getValue().getTransactionType());
+        assertEquals(TRANSACTION_SUCCESS, captor.getValue().getTransactionResult());
+        assertEquals(5000L,captor.getValue().getBalanceSnapshot());
     }
 
     @Test
@@ -189,7 +207,7 @@ class TransactionInfoServiceTest {
                         .account(account)
                         .amount(1000L)
                         .transactionType(TransactionType.CANCEL)
-                        .transactionResult(TransactionResult.TRANSACTION_FAIL)
+                        .transactionResult(TRANSACTION_FAIL)
                         .transactedAt(LocalDateTime.now())
                         .build()));
         given(accountRepository.findByAccountNumber(anyString()))
@@ -217,8 +235,8 @@ class TransactionInfoServiceTest {
                 .willReturn(Optional.ofNullable(TransactionInfo.builder().id(1L)
                         .account(account)
                         .amount(5500L)
-                        .transactionType(TransactionType.USE)
-                        .transactionResult(TransactionResult.TRANSACTION_SUCCESS)
+                        .transactionType(USE)
+                        .transactionResult(TRANSACTION_SUCCESS)
                         .transactedAt(LocalDateTime.now())
                         .build()));
         given(accountRepository.findByAccountNumber(anyString()))
@@ -231,7 +249,7 @@ class TransactionInfoServiceTest {
                 transactionInfoService.transactCancel("1111111111",
                         "1q2w3e4r5t", 1000L));
         //then
-        assertEquals(ErrorCode.TRANSACTION_AMOUNT_MISMATCH, exception.getErrorCode());
+        assertEquals(ErrorCode.TRANSACTION_AMOUNT_UN_MATCH, exception.getErrorCode());
     }
 
     @Test
@@ -246,8 +264,8 @@ class TransactionInfoServiceTest {
                 .willReturn(Optional.ofNullable(TransactionInfo.builder().id(1L)
                         .account(account)
                         .amount(5500L)
-                        .transactionType(TransactionType.USE)
-                        .transactionResult(TransactionResult.TRANSACTION_SUCCESS)
+                        .transactionType(USE)
+                        .transactionResult(TRANSACTION_SUCCESS)
                         .transactedAt(LocalDateTime.now())
                         .build()));
         given(accountRepository.findByAccountNumber(anyString()))
@@ -260,7 +278,7 @@ class TransactionInfoServiceTest {
                 transactionInfoService.transactCancel("1111111111",
                         "1q2w3e4r5t", 5500L));
         //then
-        assertEquals(ErrorCode.ACCOUNT_NUMBER_MISMATCH, exception.getErrorCode());
+        assertEquals(ErrorCode.ACCOUNT_NUMBER_UN_MATCH, exception.getErrorCode());
     }
 
     @Test
@@ -275,8 +293,8 @@ class TransactionInfoServiceTest {
                 .willReturn(Optional.ofNullable(TransactionInfo.builder().id(1L)
                         .account(account)
                         .amount(5500L)
-                        .transactionType(TransactionType.USE)
-                        .transactionResult(TransactionResult.TRANSACTION_SUCCESS)
+                        .transactionType(USE)
+                        .transactionResult(TRANSACTION_SUCCESS)
                         .transactedAt(LocalDateTime.now().minusYears(2))
                         .build()));
         given(accountRepository.findByAccountNumber(anyString()))
@@ -299,25 +317,36 @@ class TransactionInfoServiceTest {
         Account account = Account.builder()
                 .accountStatus(AccountStatus.IN_USE)
                 .accountNumber("1111111111")
+                .balance(20000L)
                 .build();
         given(transactionInfoRepository.findByTransactionId(anyString()))
                 .willReturn(Optional.ofNullable(TransactionInfo.builder().id(1L)
                         .account(account)
                         .amount(5500L)
-                        .transactionType(TransactionType.USE)
-                        .transactionResult(TransactionResult.TRANSACTION_SUCCESS)
+                        .transactionType(USE)
+                        .transactionResult(TRANSACTION_SUCCESS)
                         .transactedAt(LocalDateTime.now())
                         .build()));
         given(accountRepository.findByAccountNumber(anyString()))
-                .willReturn(Optional.ofNullable(Account.builder().accountNumber("1111111111")
-                        .balance(20000L)
-                        .accountStatus(AccountStatus.UNREGISTERED)
-                        .build()));
+                .willReturn(Optional.ofNullable(account));
+        given(transactionInfoRepository.save(any()))
+                .willReturn(TransactionInfo.builder()
+                        .transactionId("1q2w3e4r5t6y")
+                        .account(account)
+                        .amount(15000L)
+                        .transactionType(CANCEL)
+                        .transactionResult(TRANSACTION_CANCEL)
+                        .balanceSnapshot(5000L)
+                        .transactedAt(LocalDateTime.now()).build());
+        ArgumentCaptor<TransactionInfo> captor = ArgumentCaptor.forClass(TransactionInfo.class);
         //when
-        TransactionDto transactionDto = transactionInfoService.transactCancel("1111111111",
+        transactionInfoService.transactCancel("1111111111",
                 "1q2w3e4r5t", 5500L);
         //then
-        assertEquals(TransactionResult.TRANSACTION_SUCCESS, transactionDto.getTransactionResult());
+        verify(transactionInfoRepository, times(1)).save(captor.capture());
+        assertEquals(TRANSACTION_SUCCESS, captor.getValue().getTransactionResult());
+        assertEquals(5500L,captor.getValue().getAmount());
+        assertEquals(25500L,captor.getValue().getBalanceSnapshot());
     }
 
     @Test
@@ -348,8 +377,8 @@ class TransactionInfoServiceTest {
                 .willReturn(Optional.ofNullable(TransactionInfo.builder()
                         .account(account)
                         .transactionId("1q2w3e4r5t")
-                        .transactionType(TransactionType.USE)
-                        .transactionResult(TransactionResult.TRANSACTION_SUCCESS)
+                        .transactionType(USE)
+                        .transactionResult(TRANSACTION_SUCCESS)
                         .amount(10000L)
                         .transactedAt(LocalDateTime.now().minusMonths(1))
                         .build()));
@@ -357,5 +386,31 @@ class TransactionInfoServiceTest {
         TransactionDto transactionDto = transactionInfoService.inquireTransaction("1q2w3e4r5t");
         //then
         assertEquals("1q2w3e4r5t", transactionDto.getTransactionId());
+        assertEquals(10000L,transactionDto.getAmount());
+        assertEquals(TRANSACTION_SUCCESS,transactionDto.getTransactionResult());
+        assertEquals(USE,transactionDto.getTransactionType());
+    }
+
+    @Test
+    @DisplayName("실패한 거래 저장")
+    void saveFailedTransaction() {
+        //given
+        Account account = Account.builder()
+                .accountStatus(AccountStatus.IN_USE)
+                .accountNumber("1111111111")
+                .balance(20000L)
+                .build();
+        given(accountRepository.findByAccountNumber(anyString()))
+                .willReturn(Optional.ofNullable(account));
+        ArgumentCaptor<TransactionInfo> captor = ArgumentCaptor.forClass(TransactionInfo.class);
+        //when
+        transactionInfoService.saveFailedTransaction("1111111111",
+                5000L, USE);
+        //then
+        verify(transactionInfoRepository, times(1)).save(captor.capture());
+        assertEquals(USE, captor.getValue().getTransactionType());
+        assertEquals(TRANSACTION_FAIL,captor.getValue().getTransactionResult());
+        assertEquals(20000L, captor.getValue().getBalanceSnapshot());
+        System.out.println("Test Generated UUID: "+captor.getValue().getTransactionId());
     }
 }

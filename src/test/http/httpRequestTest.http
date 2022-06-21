@@ -24,7 +24,7 @@ GET http://localhost:8080/account?user_id=10
 POST http://localhost:8080/transaction/use
 Content-Type: application/json
 
-{"userId": 10,"accountNumber": 1000000003,"amount": 5500}
+{"userId": 10,"accountNumber": 1000000003,"amount": 1000}
 
 <> 2022-06-13T014502-2.200.json
 
@@ -37,7 +37,7 @@ Content-Type: application/json
 <> 2022-06-13T014503-1.404.json
 
 ### transaction inquiry
-GET http://localhost:8080/transaction/5
+GET http://localhost:8080/transaction/d88392ceefc148548e8c6d0dcb4bac9b
 
 <> 2022-06-13T014503-1.200.json
 <> 2022-06-13T014327-3.200.json

@@ -53,7 +53,7 @@ public class TransactionInfoService {
 
     private void validateTransactUse(AccountUser accountUser, Account account) {
         if (accountUser != account.getAccountUser()) {
-            throw new AccountException(ErrorCode.ACCOUNT_USER_MISMATCH);
+            throw new AccountException(ErrorCode.ACCOUNT_USER_UN_MATCH);
         }
 
         if (account.getAccountStatus() == AccountStatus.UNREGISTERED) {
@@ -87,11 +87,11 @@ public class TransactionInfoService {
 
     private void validateCancelUseBalance(Long cancelAmount, TransactionInfo transactionInfo, Account account) {
         if (!cancelAmount.equals(transactionInfo.getAmount())) {
-            throw new AccountException(ErrorCode.TRANSACTION_AMOUNT_MISMATCH);
+            throw new AccountException(ErrorCode.TRANSACTION_AMOUNT_UN_MATCH);
         }
 
         if (!account.getAccountNumber().equals(transactionInfo.getAccount().getAccountNumber())) {
-            throw new AccountException(ErrorCode.ACCOUNT_NUMBER_MISMATCH);
+            throw new AccountException(ErrorCode.ACCOUNT_NUMBER_UN_MATCH);
         }
 
         if (transactionInfo.getTransactedAt().isBefore(LocalDateTime.now().minusYears(1))) {
@@ -117,9 +117,10 @@ public class TransactionInfoService {
         saveTransaction(account, amount, type, TRANSACTION_FAIL);
     }
 
+
     private TransactionInfo saveTransaction(Account account, Long amount,
                                             TransactionType type, TransactionResult result) {
-        TransactionInfo transactionInfo = TransactionInfo.builder()
+        return transactionInfoRepository.save(TransactionInfo.builder()
                 .account(account)
                 .transactionType(type)
                 .transactionResult(result)
@@ -127,8 +128,6 @@ public class TransactionInfoService {
                 .balanceSnapshot(account.getBalance())
                 .transactionId(UUID.randomUUID().toString().replace("-", ""))
                 .transactedAt(LocalDateTime.now())
-                .build();
-        transactionInfoRepository.save(transactionInfo);
-        return transactionInfo;
+                .build());
     }
 }

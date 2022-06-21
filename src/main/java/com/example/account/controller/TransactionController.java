@@ -1,5 +1,6 @@
 package com.example.account.controller;
 
+import com.example.account.aop.AccountLock;
 import com.example.account.dto.TransactionCancel;
 import com.example.account.dto.TransactionInquiry;
 import com.example.account.dto.TransactionUse;
@@ -20,6 +21,7 @@ import static com.example.account.type.TransactionType.USE;
 public class TransactionController {
     private final TransactionInfoService transactionInfoService;
 
+    @AccountLock
     @PostMapping("/transaction/use")
     public TransactionUse.Response useAccountBalance(@RequestBody @Valid TransactionUse.Request request) {
         try {
@@ -37,6 +39,7 @@ public class TransactionController {
         }
     }
 
+    @AccountLock
     @PostMapping("/transaction/cancel")
     public TransactionCancel.Response cancelUseAccount(@RequestBody @Valid TransactionCancel.Request request) {
         try {
