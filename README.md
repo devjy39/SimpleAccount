@@ -12,7 +12,8 @@ RestAPI 기반의 Simple Account 만들기
 - Account - 계좌 생성, 계좌 삭제, 계좌 조회<br/>
 - Transaction - 잔액 사용, 거래 취소, 거래 조회<br/>
 
-<p>다양한 케이스의 유닛 테스트 코드 작성.</p>
-<p>
-거래금액을 늘리거나 줄이는 과정에서 여러 쓰레드 혹은 인스턴스에서 같은 계좌에 접근할 경우<br/>
-동시성 이슈로 인한 lost update 문제 redis와 Spring AOP 이용해서 해결.</p>
+- 다양한 케이스의 유닛 테스트 코드 작성.
+
+#### 동시성 이슈로 인한 lost update
+- 거래금액을 늘리거나 줄이는 과정에서 여러 쓰레드 혹은 인스턴스에서 같은 계좌에 접근할 경우 발생
+- Spring AOP를 이용해서 redis locking & unlocking.
