@@ -3,6 +3,7 @@ package com.example.account.aop;
 import com.example.account.dto.TransactionUse;
 import com.example.account.exception.AccountException;
 import com.example.account.service.AccountLockService;
+import com.example.account.service.LockAopAspect;
 import com.example.account.type.ErrorCode;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.junit.jupiter.api.Test;

@@ -1,6 +1,6 @@
 package com.example.account.controller;
 
-import com.example.account.aop.AccountLock;
+import com.example.account.service.AccountLock;
 import com.example.account.dto.TransactionCancel;
 import com.example.account.dto.TransactionInquiry;
 import com.example.account.dto.TransactionUse;

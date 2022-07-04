@@ -1,5 +1,6 @@
-package com.example.account.aop;
+package com.example.account.service;
 
+import com.example.account.aop.AccountLockIdInterface;
 import com.example.account.service.AccountLockService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

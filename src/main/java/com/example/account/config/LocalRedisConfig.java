@@ -17,9 +17,6 @@ public class LocalRedisConfig {
     @Value("${spring.redis.port}")
     private int redisPort;
 
-    @Value("${spring.redis.host}")
-    private String redisHost;
-
     private RedisServer redisServer;
 
     @PostConstruct
@@ -33,13 +30,5 @@ public class LocalRedisConfig {
         if (redisServer != null) {
             redisServer.stop();
         }
-    }
-
-    @Bean
-    public RedissonClient redissonClient() {
-        Config config = new Config();
-        config.useSingleServer().setAddress("redis://" + redisHost + ":" + redisPort);
-
-        return Redisson.create(config);
     }
 }

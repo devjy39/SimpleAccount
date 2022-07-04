@@ -35,7 +35,7 @@ public class TransactionInfoService {
      * 잔액이 부족할 경우
      * 거래금액이 너무 크거나 작은 경우
      */
-    @Transactional(dontRollbackOn = AccountException.class)
+    @Transactional()
     public TransactionDto transactUse(String accountNumber, Long userId, Long amount) {
         AccountUser accountUser = accountUserRepository.findById(userId)
                 .orElseThrow(() -> new AccountException(ErrorCode.USER_NOT_FOUND));
@@ -68,7 +68,7 @@ public class TransactionInfoService {
      * 해당 계좌의 거래가 아닌경우
      * 1년이 넘은 거래 건인 경우
      */
-    @Transactional(dontRollbackOn = AccountException.class)
+    @Transactional()
     public TransactionDto transactCancel(String accountNumber, String transactionId, Long cancelAmount) {
         TransactionInfo transactionInfo = transactionInfoRepository.findByTransactionId(transactionId)
                 .orElseThrow(() -> new AccountException(ErrorCode.TRANSACTION_NOT_FOUND));
@@ -116,7 +116,6 @@ public class TransactionInfoService {
 
         saveTransaction(account, amount, type, TRANSACTION_FAIL);
     }
-
 
     private TransactionInfo saveTransaction(Account account, Long amount,
                                             TransactionType type, TransactionResult result) {
